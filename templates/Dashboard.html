@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Covid Dashboard</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        html, body, h1, h2, h3, h4, h5 {
+            font-family: "Raleway", sans-serif
+        }
+    </style>
+    <script type='text/javascript' src='https://www.gstatic.com/charts/loader.js'></script>
+    <script type="text/javascript">
+        google.charts.load('current', {
+            'packages': ['geochart', 'corechart', 'bar', 'table'],
+            // See: https://developers.google.com/chart/interactive/docs/basic_load_libs#load-settings
+            'mapsApiKey': 'AIzaSyA0L-jGIPKUj-JWdPogE2De0E4ZQD7bI_4'
+        });
+        let loadCharts = function () {
+            drawRegionsMap({{ report_data| safe }});
+            drawBarChart({{ report_data| safe }});
+        };
+        google.charts.setOnLoadCallback(loadCharts);
+
+        function drawBarChart(data) {
+            var chartData = new google.visualization.DataTable();
+            chartData.addColumn('string', 'Estado');
+            chartData.addColumn('number', 'Casos');
+            chartData.addColumn('number', 'Recuperados');
+            chartData.addColumn('number', 'Mortes');
+
+            for (var i = 0; i < data.length; i++) {
+                chartData.addRow([
+                    data[i].region.province,
+                    {v: data[i].confirmed},
+                    data[i].recovered,
+                    data[i].deaths
+                ]);
+            }
+            var formatter = new google.visualization.NumberFormat({groupingSymbol: '.', fractionDigits: 0});
+            formatter.format(chartData, 1);
+            formatter.format(chartData, 2);
+            formatter.format(chartData, 3);
+
+            var options = {
+                sortColumn: 3,
+                showRowNumber: true,
+                sortAscending: false,
+                width: '100%',
+                height: '100%'
+            }
+
+            var table = new google.visualization.Table(document.getElementById('barchart_div'));
+            table.draw(chartData, options);
+
+            {#var options = {#}
+            {#    title: 'Casos de Covid-19 no Brasil',#}
+            {#    width: "100%",#}
+            {#    height:"100%",#}
+            {#    isStacked: true,#}
+            {#    chartArea: {width: '50%'},#}
+            {#    annotations: {#}
+            {#        alwaysOutside: true,#}
+            {#        textStyle: {#}
+            {#            fontSize: 12,#}
+            {#            auraColor: 'none',#}
+            {#            color: '#555'#}
+            {#        },#}
+            {#        boxStyle: {#}
+            {#            stroke: '#ccc',#}
+            {#            strokeWidth: 1,#}
+            {#            gradient: {#}
+            {#                color1: '#f3e5f5',#}
+            {#                color2: '#f3e5f5',#}
+            {#                x1: '0%', y1: '0%',#}
+            {#                x2: '100%', y2: '100%'#}
+            {#            }#}
+            {#        }#}
+            {#    },#}
+            {#    hAxis: {#}
+            {#        title: 'Total de casos',#}
+            {#        minValue: 0,#}
+            {#    },#}
+            {#    bar: {groupWidth:100},#}
+            {#    vAxis: {title: 'City'}#}
+            {# } #}
+            {#var chart = new google.visualization.BarChart(document.getElementById('barchart_div'));#}
+            {#chart.draw(chartData, options);#}
+        }
+
+        function drawRegionsMap(data) {
+            var chart_data = new google.visualization.DataTable();
+            {#chart_data.addColumn('number', 'lat');#}
+            {#chart_data.addColumn('number', 'lon');#}
+            chart_data.addColumn('string', 'Estado');
+            chart_data.addColumn('number', 'Casos confirmados');
+            chart_data.addColumn({'type': 'string', 'role': 'tooltip', 'p': {'html': true}});
+
+            var tooltip = "";
+            for (var i = 0; i < data.length; i++) {
+                tooltip = "<b>Casos: </b>" + data[i].confirmed.toLocaleString('pt-BR')
+                    + "<br /><b>Recuperados: </b>" + data[i].recovered.toLocaleString('pt-BR')
+                    + "<br /><b>Mortes: </b>" + data[i].deaths.toLocaleString('pt-BR');
+
+                chart_data.addRow([
+                    {#parseFloat(data[i].region.lat),#}
+                    {#parseFloat(data[i].region.long),#}
+                    data[i].region.province,
+                    data[i].confirmed,
+                    tooltip
+                ]);
+            }
+
+            var options = {
+                region: 'BR',
+                resolution: 'provinces',
+                enableRegionInteractivity: 'true',
+                {#displayMode: 'provinces',#}
+                tooltip: {isHtml: true},
+                {#title: 'bla',#}
+                {#width: 556,#}
+                {#height: 347,#}
+                colorAxis: {colors: ['#ffe100', '#ff8300', '#ff0000']}
+            };
+
+            var chart = new google.visualization.GeoChart(document.getElementById('regions_div'));
+
+            chart.draw(chart_data, options);
+        }
+    </script>
+</head>
+<body class="w3-light-grey">
+<div class="w3-main w3-bar">
+    <header class="w3-container">
+        <h5><b><i class="fa fa-dashboard"></i> Covid-19 Dashboard</b></h5>
+        <p>Fonte: <a href="https://covid-api.com/" target="_blank">covid-api.com</a></p>
+    </header>
+    <div class="w3-row">
+        <div class="w3-half">
+            <div class="w3-container w3-card w3-white w3-round w3-padding w3-margin-left w3-margin-bottom">
+                <h5 class="w3-xlarge w3-bottombar w3-border-orange">Casos</h5>
+                <div id="barchart_div" style="height: 400px;"></div>
+            </div>
+        </div>
+        <div class="w3-half">
+            <div class="w3-container w3-card w3-white w3-round w3-padding w3-margin-left w3-margin-right w3-margin-bottom">
+                <h5 class="w3-xlarge w3-bottombar w3-border-red">Mapa de casos</h5>
+                <div id="regions_div" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
